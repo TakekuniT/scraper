@@ -89,7 +89,12 @@ def getFollowees(page, username, max_results=300):
     found = set()
     stale = 0
 
-    while len(found) < max_results and stale < 4:
+    # Get dialog center for mouse wheel scrolling (works with React virtual lists)
+    box = dialog.bounding_box()
+    scroll_x = box['x'] + box['width'] / 2 if box else 640
+    scroll_y = box['y'] + box['height'] / 2 if box else 400
+
+    while len(found) < max_results and stale < 5:
         prev = len(found)
         for link in dialog.locator('a').all():
             href = link.get_attribute('href') or ''
@@ -99,10 +104,9 @@ def getFollowees(page, username, max_results=300):
 
         stale = stale + 1 if len(found) == prev else 0
 
-        page.evaluate('''() => {
-            const d = document.querySelector('[role="dialog"]');
-            if (d) { const s = d.querySelector("ul") || d; s.scrollTop += 800; }
-        }''')
+        # Mouse wheel scroll — triggers React's virtual list to load more items
+        page.mouse.move(scroll_x, scroll_y)
+        page.mouse.wheel(0, 1200)
         time.sleep(1.5)
 
     return list(found)[:max_results]
@@ -116,8 +120,9 @@ def checkProfile(page, username):
         time.sleep(1)
         body = page.inner_text('body')
         html = page.content()
-        is_creator = any(s in body.lower() for s in CREATOR_SIGNALS)
         emails = extractEmails(html)
+        # A public email in a bio is itself a creator signal — skip the keyword check
+        is_creator = bool(emails) or any(s in body.lower() for s in CREATOR_SIGNALS)
         return is_creator, emails
     except:
         return False, []
@@ -149,8 +154,11 @@ def discoverCreators(seeds, page, target_emails, max_followees_per_node=300):
                     'emails': emails,
                     'profile_url': f'https://www.instagram.com/{uname}/'
                 })
-                queue.append(uname)
                 email_count += len(emails)
+                # Only expand from creators who have a public email — they're
+                # professional creators whose following lists stay niche-relevant
+                if emails:
+                    queue.append(uname)
                 label = ', '.join(emails) if emails else 'no email'
                 print(f"  + @{uname} — {label} (total emails: {email_count}/{target_emails})")
 
