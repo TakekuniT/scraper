@@ -123,14 +123,15 @@ def checkProfile(page, username):
         return False, []
 
 
-def discoverCreators(seeds, page, target_count, max_followees_per_node=300):
+def discoverCreators(seeds, page, target_emails, max_followees_per_node=300):
     queue = deque(seeds)
     visited = set(seeds)
     found = []
+    email_count = 0
 
-    while queue and len(found) < target_count:
+    while queue and email_count < target_emails:
         username = queue.popleft()
-        print(f"Exploring @{username} | Found: {len(found)}/{target_count}")
+        print(f"Exploring @{username} | Emails found: {email_count}/{target_emails}")
 
         followees = getFollowees(page, username, max_results=max_followees_per_node)
         print(f"  {len(followees)} followees, scanning profiles...")
@@ -149,10 +150,11 @@ def discoverCreators(seeds, page, target_count, max_followees_per_node=300):
                     'profile_url': f'https://www.instagram.com/{uname}/'
                 })
                 queue.append(uname)
+                email_count += len(emails)
                 label = ', '.join(emails) if emails else 'no email'
-                print(f"  + @{uname} ({len(found)}/{target_count}) — {label}")
+                print(f"  + @{uname} — {label} (total emails: {email_count}/{target_emails})")
 
-            if len(found) >= target_count:
+            if email_count >= target_emails:
                 break
 
             time.sleep(0.8)

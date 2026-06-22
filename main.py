@@ -73,7 +73,7 @@ def main():
     seeds = load_seeds(niche)
     print(f"Loaded {len(seeds)} seed(s)")
 
-    target_count = int(input("How many creator profiles to find? ").strip())
+    target_count = int(input("How many emails to find? ").strip())
 
     with sync_playwright() as p:
         browser = p.chromium.launch_persistent_context(
