@@ -86,6 +86,14 @@ def getFollowees(page, username, max_results=300):
 
     time.sleep(1.5)
     dialog = page.locator('div[role="dialog"]')
+
+    # Confirm which dialog opened — should always say "Following", not "Followers"
+    try:
+        header = dialog.locator('h1, h2, span[id]').first.inner_text(timeout=2000)
+        print(f"  Dialog opened: '{header}'")
+    except:
+        pass
+
     found = set()
     stale = 0
 
@@ -133,19 +141,22 @@ def discoverCreators(seeds, page, target_emails, max_followees_per_node=300):
     visited = set(seeds)
     found = []
     email_count = 0
+    node_index = 0
 
     while queue and email_count < target_emails:
         username = queue.popleft()
-        print(f"Exploring @{username} | Emails found: {email_count}/{target_emails}")
+        node_index += 1
+        print(f"\n[Node {node_index} | @{username}] Emails: {email_count}/{target_emails} | Queue: {len(queue)} remaining")
 
         followees = getFollowees(page, username, max_results=max_followees_per_node)
-        print(f"  {len(followees)} followees, scanning profiles...")
+        print(f"[Node {node_index} | @{username}] {len(followees)} followees to scan")
 
-        for uname in followees:
+        for i, uname in enumerate(followees, 1):
             if uname in visited:
                 continue
             visited.add(uname)
 
+            print(f"  [@{username} | {i}/{len(followees)}] Checking @{uname}...")
             is_creator, emails = checkProfile(page, uname)
 
             if is_creator:
@@ -155,12 +166,12 @@ def discoverCreators(seeds, page, target_emails, max_followees_per_node=300):
                     'profile_url': f'https://www.instagram.com/{uname}/'
                 })
                 email_count += len(emails)
-                # Only expand from creators who have a public email — they're
-                # professional creators whose following lists stay niche-relevant
                 if emails:
                     queue.append(uname)
                 label = ', '.join(emails) if emails else 'no email'
-                print(f"  + @{uname} — {label} (total emails: {email_count}/{target_emails})")
+                print(f"  [@{username} | {i}/{len(followees)}] ✓ @{uname} — {label} (emails: {email_count}/{target_emails})")
+            else:
+                print(f"  ✗ @{uname} — skipped (no creator signals)")
 
             if email_count >= target_emails:
                 break

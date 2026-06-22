@@ -9,9 +9,12 @@ def extractEmails(text):
 
 def scrapeEmails(creators):
     rows = []
+    seen = set()
     for creator in creators:
-        if creator['emails']:
-            for email in creator['emails']:
+        for email in creator['emails']:
+            key = email.lower()
+            if key not in seen:
+                seen.add(key)
                 rows.append({
                     'username': creator['username'],
                     'email': email,
