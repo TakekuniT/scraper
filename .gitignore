@@ -1,0 +1,17 @@
+# Playwright browser session (large, contains personal login data)
+.browser_data/
+
+# Old instaloader session files
+.session_*
+
+# Scraped output
+output/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# OS junk
+.DS_Store
+Thumbs.db

@@ -2,22 +2,19 @@ import re
 
 EMAIL_RE = re.compile(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', re.IGNORECASE)
 
-def extractEmails(bio):
-    if not bio:
+def extractEmails(text):
+    if not text:
         return []
-    return EMAIL_RE.findall(bio)
+    return list(set(EMAIL_RE.findall(text)))
 
-
-def scrapeEmails(profiles):
-    results = []
-    for profile in profiles:
-        emails = extractEmails(profile.biography or "")
-        for email in emails:
-            results.append({
-                'username': profile.username,
-                'full_name': profile.full_name,
-                'followers': profile.followers,
-                'email': email,
-                'profile_url': f'https://www.instagram.com/{profile.username}/'
-            })
-    return results
+def scrapeEmails(creators):
+    rows = []
+    for creator in creators:
+        if creator['emails']:
+            for email in creator['emails']:
+                rows.append({
+                    'username': creator['username'],
+                    'email': email,
+                    'profile_url': creator['profile_url']
+                })
+    return rows
