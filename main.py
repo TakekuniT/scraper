@@ -93,8 +93,9 @@ def main():
 
         ensure_logged_in(page)
 
-        print(f"Starting BFS, targeting {target_count} creators...\n")
-        creators = discoverCreators(seeds, page, target_count)
+        checkpoint = os.path.join('output', f'{niche}_emails.csv')
+        print(f"Starting BFS, targeting {target_count} emails. Checkpointing to {checkpoint}\n")
+        creators = discoverCreators(seeds, page, target_count, checkpoint_path=checkpoint)
         print(f"\nDiscovered {len(creators)} creator profiles")
 
         results = scrapeEmails(creators)

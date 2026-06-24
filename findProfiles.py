@@ -1,15 +1,16 @@
 from playwright.sync_api import Page
 from collections import deque
-from findEmail import extractEmails
+from findEmail import extractEmails, scrapeEmails
 import time
 import re
+import csv
+import os
 
 CREATOR_SIGNALS = [
     "creator", "content creator", "youtuber", "youtube", "tiktok",
     "video", "collab", "influencer", "ugc", "podcast", "streamer",
     "link in bio", "new video", "filmmaker", "educator"
 ]
-
 def dismissPopups(page):
     for label in ["Not Now", "Not now", "Later"]:
         try:
@@ -85,7 +86,7 @@ def getFollowees(page, username, max_results=300):
         return []
 
     time.sleep(1.5)
-    dialog = page.locator('div[role="dialog"]')
+    dialog = page.locator('div[role="dialog"]').first
 
     # Confirm which dialog opened — should always say "Following", not "Followers"
     try:
@@ -136,7 +137,17 @@ def checkProfile(page, username):
         return False, []
 
 
-def discoverCreators(seeds, page, target_emails, max_followees_per_node=300):
+def _save_checkpoint(found, path):
+    rows = scrapeEmails(found)
+    os.makedirs(os.path.dirname(path) or '.', exist_ok=True)
+    with open(path, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.DictWriter(f, fieldnames=['username', 'email', 'profile_url'])
+        writer.writeheader()
+        writer.writerows(rows)
+    print(f"  [Checkpoint saved — {len(rows)} emails to {path}]")
+
+
+def discoverCreators(seeds, page, target_emails, max_followees_per_node=300, checkpoint_path=None):
     queue = deque(seeds)
     visited = set(seeds)
     found = []
@@ -177,5 +188,8 @@ def discoverCreators(seeds, page, target_emails, max_followees_per_node=300):
                 break
 
             time.sleep(0.8)
+
+        if checkpoint_path and found:
+            _save_checkpoint(found, checkpoint_path)
 
     return found
